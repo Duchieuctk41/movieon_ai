@@ -3,6 +3,7 @@ from colabcode import ColabCode
 from fastapi import FastAPI
 import pandas as pd
 import numpy as np
+from fastapi.middleware.cors import CORSMiddleware
 
 cc = ColabCode(port=8000, code=False)
 # api test
@@ -22,12 +23,16 @@ cc = ColabCode(port=8000, code=False)
 # api test
 app = FastAPI()
 
+origins = ["*"]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/")
-async def read_root():
-    return {"message": "hello world"}
-
-@app.post("/api/suggest/{userId}", tags=["suggest"])
+@app.get("/api/v1/movie/get-list-suggest/{userId}", tags=["suggest"])
 async def get_predictions(userId: int):
     try:
         # Load the data
@@ -72,22 +77,23 @@ async def get_predictions(userId: int):
             movie_encoded2movie.get(movies_not_watched[x][0]) for x in top_ratings_indices
         ]
 
-        top_movies_user = (
-            movies_watched_by_user.sort_values(by="rating", ascending=False)
-            .head(5)
-            .movieId.values
-        )
-        movie_df_rows = movie_df[movie_df["movieId"].isin(top_movies_user)]
-        for row in movie_df_rows.itertuples():
-            print(row.title, ":", row.genres)
+        # top_movies_user = (
+        #     movies_watched_by_user.sort_values(by="rating", ascending=False)
+        #     .head(5)
+        #     .movieId.values
+        # )
+        # movie_df_rows = movie_df[movie_df["movieId"].isin(top_movies_user)]
+        # for row in movie_df_rows.itertuples():
+        #     print(row.title, ":", row.genres)
 
         recommended_movies = movie_df[movie_df["movieId"].isin(
             recommended_movie_ids)]
         response = []
         for row in recommended_movies.itertuples():
-            response.append({"title": row.title, "genres": row.genres, "movieId": row.movieId})
+            print(row.title, ":", row.movieId)
+            response.append(str(row.movieId))
 
-        return {"suggest": response}
+        return {"data": response}
     except:
         return {"suggest": "error roi"}
 
